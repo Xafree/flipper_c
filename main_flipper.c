@@ -10,6 +10,7 @@ sem_t semaphore;
 typedef struct thread_data
 {
     int output;
+    int nb_partie;
 } thread_data;
 
 int get_random (int max){
@@ -36,19 +37,14 @@ void *routine_partie( void * arg){
 
 void *routine_monnayeur( void * arg){
     
-    int nb_partie = *(int*) arg;
-    //int *output = malloc(nb_partie * sizeof(int));
-    thread_data *tdata;
-    //int tab_size = malloc(nb_partie * sizeof(int));
-    pthread_t *t_parties = malloc(nb_partie * sizeof(pthread_t));
-    printf("thread crée monnayeur\n");
-    for(int i = 0; i< nb_partie; i++){
-        printf("parti %d \n",i);
-        pthread_create(&t_parties[i], NULL, &routine_partie, (void *)&tdata);
-        pthread_join(t_parties[i], NULL);
-    }
-     printf("VALEUR DE OUTPUT : %d \n", &tdata->output);
-    free(t_parties);
+    int nb_partie;
+    thread_data *tdata = (thread_data *) arg;
+    printf( "Combien de pièce avez vous-saisie ? \n" );
+    fflush(stdin);
+    scanf( "%d", nb_partie );
+    printf("TEST");
+    tdata->nb_partie = &nb_partie;
+    
     pthread_exit(NULL);
 }
 
@@ -64,18 +60,35 @@ void *routine_flipper(void *arg) {
     pthread_t t_monnayeur;
     pthread_t t_client;
 
-    int nb_partie = *(int *)arg;
+    //int nb_partie = *(int *)arg;
 
     printf("nous somme dans le thread \n");
-
+    thread_data *tdata;
     //création du thread monnayeur
-	pthread_create(& t_monnayeur, NULL, &routine_monnayeur,&nb_partie);
+	pthread_create(& t_monnayeur, NULL, &routine_monnayeur,(void *)&tdata);
     pthread_join(t_monnayeur, NULL);
+
+    //lunch game
+    //int nb_partie = *(int*) arg;
+    //int *output = malloc(nb_partie * sizeof(int));
+    
+    //int tab_size = malloc(nb_partie * sizeof(int));
+    printf("test ici retour lenght %d \n",tdata->nb_partie);
+    int max_lengt = tdata->nb_partie;
+    pthread_t *t_parties = malloc(max_lengt * sizeof(pthread_t));
+    for(int i = 0; i< tdata->nb_partie ; i++){
+        printf("parti %d \n",i);
+        pthread_create(&t_parties[i], NULL, &routine_partie, (void *)&tdata);
+        pthread_join(t_parties[i], NULL);
+    }
+
+    printf("VALEUR DE OUTPUT : %d \n", &tdata->output);
 
     pthread_create(& t_client, NULL, &routine_client, NULL );
     pthread_join(t_monnayeur, NULL);
 
 	pthread_exit(NULL);
+    free(t_parties);
     free(&t_monnayeur);
 }
 
@@ -88,8 +101,7 @@ int main(void) {
     int nb_partie = 1;
 
     while(nb_partie != 0){
-        printf( "Combien de pièce avez vous-saisie ? \n" );
-        scanf( "%d", &nb_partie );
+
 
         if( nb_partie >= 1000 || nb_partie == 0){
             if(nb_partie == 0){
