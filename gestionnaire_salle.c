@@ -3,12 +3,16 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
 
 sem_t semaphore;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_t writerthreads[100];
+pthread_t readerthreads[100];
 
 struct thread_datas {
-  int tab_score[5]; // mettre un pointeur quand vrai data 
+  int tab_score[3]; // mettre un pointeur quand vrai data 
 };
 
 
@@ -22,15 +26,97 @@ void *routine_afficheur(void * arg){
 
 }
 
+void* writer(void* args)
+{
+    int score = *((int*)args);
+    printf("\nWriter is trying to enter");
+ 
+    // Lock the semaphore
+    sem_wait(&semaphore);
+ 
+    printf("\nWriter has entered ");
+ 
+    // Unlock the semaphore
+    sem_post(&semaphore);
+    printf("\nThe score is: %d\n", score);
+    printf("Writer is leaving");
+    pthread_exit(NULL);
+}
+
 void *routine_serveurTCP(void * arg){
     struct thread_datas *args = (struct thread_datas *) arg;
-    printf("Waiting response.....\n");
-    sleep(2);
-    //simulation de valeur
-    for(int i = 0; i < 5; ++i) {
-        args->tab_score[i]=i+3*4;
+// Initialize variables
+    int serverSocket, newSocket;
+    struct sockaddr_in serverAddr;
+    struct sockaddr_storage serverStorage;
+ 
+    socklen_t addr_size;
+    sem_init(&semaphore, 0, 1);
+ 
+    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(8989);
+ 
+    // Bind the socket to the
+    // address and port number.
+    bind(serverSocket,
+         (struct sockaddr*)&serverAddr,
+         sizeof(serverAddr));
+ 
+    // Listen on the socket,
+    // with 40 max connection
+    // requests queued
+    if (listen(serverSocket, 50) == 0)
+        printf("Listening\n");
+    else
+        printf("Error\n");
+ 
+    // Array for thread
+    //pthread_t tid[60];
+ 
+    int i = 0;
+ 
+    while (1) {
+        addr_size = sizeof(serverStorage);
+ 
+        // Extract the first
+        // connection in the queue
+        newSocket = accept(serverSocket,
+                           (struct sockaddr*)&serverStorage,
+                           &addr_size);
+        int score = 0;
+        recv(newSocket,
+             &score, sizeof(score), 0);
+
+        // Create writers thread
+        if (pthread_create(&writerthreads[i++], NULL,
+                            writer, &score)
+            != 0)
+
+            // Error in creating thread
+            printf("Failed to create thread\n");             
+ 
+ 
+        if (i >= 50) {
+            // Update i
+            i = 0;
+ 
+            while (i < 50) {
+                // Suspend execution of
+                // the calling thread
+                // until the target
+                // thread terminates
+                pthread_join(writerthreads[i++],
+                             NULL);
+                pthread_join(readerthreads[i++],
+                             NULL);
+            }
+ 
+            // Update i
+            i = 0;
+        }
     }
-    
     printf("Success\n");
     pthread_exit((void *)(args->tab_score));
 }
@@ -51,6 +137,7 @@ void *routine_gestionnaire_salle(void *arg) {
 
     pthread_exit(NULL);
 }
+
 
 int main(void) {
 	// Création de la variable qui va contenir le thread

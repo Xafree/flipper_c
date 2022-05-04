@@ -3,9 +3,6 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <unistd.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <sys/socket.h>
 
 sem_t semaphore;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -30,7 +27,6 @@ void *routine_partie( void * arg){
     struct thread_datas *args = (struct thread_datas *) arg;
 
     int score = get_random(1000000);
-    printf("Score partie : %d\n",score);
     args->tmp_score =score;
     sleep(1);
 
@@ -58,38 +54,12 @@ void *routine_client(void * arg){
     printf("Dans du thread client \n");
     pthread_mutex_lock(&mutex);
     struct thread_datas *args = (struct thread_datas *) arg;
-    int network_socket;
-
-    network_socket = socket(AF_INET,SOCK_STREAM, 0);
-
-    struct sockaddr_in server_address;
-    server_address.sin_family = AF_INET;
-    server_address.sin_addr.s_addr = INADDR_ANY;
-    server_address.sin_port = htons(8989);
-
-    int connection_status = connect(network_socket,
-                                    (struct sockaddr*)&server_address,
-                                    sizeof(server_address));
-
-    if (connection_status < 0) {
-        puts("Error\n");
-        return 0;   
-    }
-
-    printf("Connection estabilished\n");
- 
-    // Send data to the socket
-    //send(network_socket, args->tab_score,
-         //sizeof(args->tab_score), 0);
-
-    //printf("Suspense .....\n");
-    //sleep(2);
+    printf("Suspense .....\n");
+    sleep(2);
     for(int i = 0;i<args->nb_piece;i++){
-        send(network_socket, &args->tab_score[i],
-        sizeof(args->tab_score), 0);
+        printf("Socre de la partie %d : %d \n",i+1,args->tab_score[i]);
         sleep(1);
     }
-    close(network_socket);
     pthread_mutex_unlock(&mutex);
     pthread_exit(NULL);
 }
