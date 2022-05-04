@@ -79,16 +79,11 @@ void *routine_client(void * arg){
     printf("Connection estabilished\n");
  
     // Send data to the socket
-    //send(network_socket, args->tab_score,
-         //sizeof(args->tab_score), 0);
+    send(network_socket, args->tab_score, sizeof(args->tab_score), 0);
 
     //printf("Suspense .....\n");
     //sleep(2);
-    for(int i = 0;i<args->nb_piece;i++){
-        send(network_socket, &args->tab_score[i],
-        sizeof(args->tab_score), 0);
-        sleep(1);
-    }
+ 
     close(network_socket);
     pthread_mutex_unlock(&mutex);
     pthread_exit(NULL);
@@ -108,20 +103,27 @@ void *routine_flipper(void *arg) {
 
     //TODO playeur
     pthread_t *t_parties = malloc((int) nb_piece* sizeof(pthread_t));
-    int *tab_score = malloc((int) nb_piece* sizeof(int));
+
+    int *tab_score = malloc(sizeof(int));
+
     void *score = NULL;
     for(int i = 0; i< (int) nb_piece ; i++){
+
+        pthread_mutex_lock(&mutex);
+
         pthread_create(&t_parties[i], NULL, &routine_partie,args);
         pthread_join(t_parties[i], &score);
-        tab_score[i] = (int) score;
+        tab_score[0] = (int) score;
         printf ("score de la partie n°%d en cours...\n",i+1);
+        
+        args->tab_score = tab_score;
+        pthread_mutex_unlock(&mutex);
+
+        //Thread client
+        printf("Création du thread client \n");
+        pthread_create(&t_client, NULL, &routine_client,args);
+        pthread_join(t_client, NULL);
     }
-    args->tab_score = tab_score;
-    
-    //Thread client
-    printf("Création du thread client \n");
-    pthread_create(&t_client, NULL, &routine_client,args);
-    pthread_join(t_client, NULL);
 
     //Kill du thread
     free(args);

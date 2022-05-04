@@ -36,14 +36,20 @@ void* writer(void* args)
  
     printf("\nWriter has entered ");
  
-    // Unlock the semaphore
     sem_post(&semaphore);
+    // Unlock the semaphore
     printf("\nThe score is: %d\n", score);
+
+
+
     printf("Writer is leaving");
     pthread_exit(NULL);
 }
 
 void *routine_serveurTCP(void * arg){
+
+
+
     struct thread_datas *args = (struct thread_datas *) arg;
 // Initialize variables
     int serverSocket, newSocket;
@@ -89,13 +95,20 @@ void *routine_serveurTCP(void * arg){
         recv(newSocket,
              &score, sizeof(score), 0);
 
-        // Create writers thread
-        if (pthread_create(&writerthreads[i++], NULL,
-                            writer, &score)
-            != 0)
+        // // Lock the semaphore
+        sem_wait(&semaphore);
+        printf("\nWriter has entered ");
+        // Unlock the semaphore
+        printf("\nThe score is: %d\n", score);
+        sem_post(&semaphore);
 
-            // Error in creating thread
-            printf("Failed to create thread\n");             
+        // Create writers thread
+        // if (pthread_create(&writerthreads[i++], NULL,
+        //                     writer, &score)
+        //     != 0)
+
+        //     // Error in creating thread
+        //     printf("Failed to create thread\n");             
  
  
         if (i >= 50) {
@@ -126,14 +139,15 @@ void *routine_gestionnaire_salle(void *arg) {
     pthread_t t_afficheur;
     struct thread_datas *args = calloc (sizeof (struct thread_datas), 1);
 
-    printf("Création du thread serveur TCP \n");
     void* tableau = NULL;
+    printf("Création du thread serveur TCP \n");
     pthread_create(&t_serveur_tcp, NULL, &routine_serveurTCP, args);
     pthread_join(t_serveur_tcp, &tableau);
 
     printf("Création du thread Afficheur \n");
     pthread_create(&t_afficheur, NULL, &routine_afficheur, args);
     pthread_join(t_afficheur, NULL);
+
 
     pthread_exit(NULL);
 }
