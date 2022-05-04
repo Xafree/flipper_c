@@ -14,6 +14,7 @@ pthread_t readerthreads[100];
 struct thread_datas {
   int tab_score[3]; // mettre un pointeur quand vrai data 
   int index;
+  int record;
 };
 
 
@@ -27,7 +28,11 @@ void *routine_afficheur(void * arg){
         printf("\n");
         for(int i = 0; i < 3 ; i++){
             printf("SCORE AFFICHEUR %d : %d \n",i, args->tab_score[i]);
+            if (args->tab_score[i] > args->record) {
+                args->record = args->tab_score[i];
+            }
         }
+        printf("RECORD: %d\n", args->record);
         sem_post(&semaphore);
     }
 }
@@ -112,16 +117,11 @@ void *routine_gestionnaire_salle(void *arg) {
     struct thread_datas *args = calloc (sizeof (struct thread_datas), 1);
     
     args->index = 0;
+    args->record = 0;
 
     for (int i= 0 ; i < 3 ; i++) {
         args->tab_score[i] = 0;
     }
-
-    // printf("THIS IS INIT TABLEAU\n");
-
-    // for (int i = 0 ; i < 3 ; i++) {
-    //     printf("score %d : %d \n", i, args->tab_score[i]);
-    // }
 
     printf("Création du thread serveur TCP \n");
     pthread_create(&t_serveur_tcp, NULL, &routine_serveurTCP, args);
