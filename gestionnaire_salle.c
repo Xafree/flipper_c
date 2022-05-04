@@ -13,6 +13,7 @@ pthread_t readerthreads[100];
 
 struct thread_datas {
   int tab_score[3]; // mettre un pointeur quand vrai data 
+  int index;
 };
 
 
@@ -20,35 +21,19 @@ void *routine_afficheur(void * arg){
     struct thread_datas *args = (struct thread_datas *) arg;
     //int tab_score[5] = args->tab_score;
 
-    for(int i = 0; i<5 ; i++){
-        printf("score %d : %d \n",i, args->tab_score[i]);
+    while(1) {
+        sleep(3);
+        sem_wait(&semaphore);
+        printf("\n");
+        for(int i = 0; i < 3 ; i++){
+            printf("SCORE AFFICHEUR %d : %d \n",i, args->tab_score[i]);
+        }
+        sem_post(&semaphore);
     }
-
 }
 
-void* writer(void* args)
-{
-    int score = *((int*)args);
-    printf("\nWriter is trying to enter");
- 
-    // Lock the semaphore
-    sem_wait(&semaphore);
- 
-    printf("\nWriter has entered ");
- 
-    sem_post(&semaphore);
-    // Unlock the semaphore
-    printf("\nThe score is: %d\n", score);
-
-
-
-    printf("Writer is leaving");
-    pthread_exit(NULL);
-}
 
 void *routine_serveurTCP(void * arg){
-
-
 
     struct thread_datas *args = (struct thread_datas *) arg;
 // Initialize variables
@@ -57,7 +42,7 @@ void *routine_serveurTCP(void * arg){
     struct sockaddr_storage serverStorage;
  
     socklen_t addr_size;
-    sem_init(&semaphore, 0, 1);
+    
  
     serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     serverAddr.sin_addr.s_addr = INADDR_ANY;
@@ -97,38 +82,24 @@ void *routine_serveurTCP(void * arg){
 
         // // Lock the semaphore
         sem_wait(&semaphore);
-        printf("\nWriter has entered ");
+        printf("\nThread ServerTCP : Adding value to buffer \n");
         // Unlock the semaphore
-        printf("\nThe score is: %d\n", score);
+        //printf("\nThe score is: %d\n", score);
+
+        args->tab_score[args->index] = score;
+
+        if (args->index < 2) {
+            args->index++;
+        } else {
+            args->index = 0;
+        }
+
+        // for (int i = 0 ; i < 3 ; i++) {
+        //     printf("score %d : %d \n", i, args->tab_score[i]);
+        // }
+
         sem_post(&semaphore);
 
-        // Create writers thread
-        // if (pthread_create(&writerthreads[i++], NULL,
-        //                     writer, &score)
-        //     != 0)
-
-        //     // Error in creating thread
-        //     printf("Failed to create thread\n");             
- 
- 
-        if (i >= 50) {
-            // Update i
-            i = 0;
- 
-            while (i < 50) {
-                // Suspend execution of
-                // the calling thread
-                // until the target
-                // thread terminates
-                pthread_join(writerthreads[i++],
-                             NULL);
-                pthread_join(readerthreads[i++],
-                             NULL);
-            }
- 
-            // Update i
-            i = 0;
-        }
     }
     printf("Success\n");
     pthread_exit((void *)(args->tab_score));
@@ -137,15 +108,29 @@ void *routine_serveurTCP(void * arg){
 void *routine_gestionnaire_salle(void *arg) {
     pthread_t t_serveur_tcp;
     pthread_t t_afficheur;
+    sem_init(&semaphore, 0, 1);
     struct thread_datas *args = calloc (sizeof (struct thread_datas), 1);
+    
+    args->index = 0;
 
-    void* tableau = NULL;
+    for (int i= 0 ; i < 3 ; i++) {
+        args->tab_score[i] = 0;
+    }
+
+    // printf("THIS IS INIT TABLEAU\n");
+
+    // for (int i = 0 ; i < 3 ; i++) {
+    //     printf("score %d : %d \n", i, args->tab_score[i]);
+    // }
+
     printf("Création du thread serveur TCP \n");
     pthread_create(&t_serveur_tcp, NULL, &routine_serveurTCP, args);
-    pthread_join(t_serveur_tcp, &tableau);
 
     printf("Création du thread Afficheur \n");
     pthread_create(&t_afficheur, NULL, &routine_afficheur, args);
+    
+    
+    pthread_join(t_serveur_tcp, NULL);
     pthread_join(t_afficheur, NULL);
 
 
@@ -155,8 +140,8 @@ void *routine_gestionnaire_salle(void *arg) {
 
 int main(void) {
 	// Création de la variable qui va contenir le thread
+
 	pthread_t t_gestionnaire_salle;
-    sem_init(&semaphore,0,1);
 
     printf("Création du thread gestionnaire de salle \n");
 
