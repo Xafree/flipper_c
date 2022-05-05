@@ -12,7 +12,7 @@ pthread_t writerthreads[100];
 pthread_t readerthreads[100];
 
 struct thread_datas {
-  int tab_score[3]; // mettre un pointeur quand vrai data 
+  int buffer_score[3]; // mettre un pointeur quand vrai data 
   int index;
   int record;
   int updatedBuffer;
@@ -21,6 +21,7 @@ struct thread_datas {
 
 void *routine_afficheur(void * arg){
     struct thread_datas *args = (struct thread_datas *) arg;
+    const int size = 5;
     int tab_score_afficheur[5] = {0, 0, 0, 0, 0};
     int index_afficheur = 0;
 
@@ -30,38 +31,36 @@ void *routine_afficheur(void * arg){
         
         if (args->updatedBuffer == 1) {
             printf("\n");
-            for(int i = 0 ; i < 3 ; i++) {
-                tab_score_afficheur[index_afficheur] = args->tab_score[i];
-                printf("index_afficheur : %d\n", index_afficheur);
+            printf("BEFORE index_afficheur : %d\n", index_afficheur);
+            printf("BEFORE index : %d\n", args->index);
+
+            if (index_afficheur >= size) {
+                index_afficheur = 0;
+            }
+            printf("AFTER index_afficheur : %d\n", index_afficheur);
+
+            if (args->index >= 0) {
+
+                tab_score_afficheur[index_afficheur] = args->buffer_score[args->index];
                 index_afficheur++;
 
             }
 
-            for (int j = 0 ; j < 5 ; j++) {
+                
+            for (int j = 0 ; j < size ; j++) {
                 printf("SCORE AFFICHEUR %d : %d \n", j, tab_score_afficheur[j]);
             }
-        }
 
+            if (args->record >= 0) {
+                printf("RECORD: %d\n", args->record);
+            } else {
+                printf("AUCUN RECORD\n");
+            }
+        }
         args->updatedBuffer = 0;
         sem_post(&semaphore);
     }
 
-    // BKP
-    // while(1) {
-    //     sleep(3);
-    //     sem_wait(&semaphore);
-    //     printf("\n");
-    //     for(int i = 0; i < 3 ; i++){
-    //         printf("SCORE AFFICHEUR %d : %d \n",i, args->tab_score[i]);
-    //         if (args->tab_score[i] > args->record) {
-    //             args->record = args->tab_score[i];
-    //         }
-    //     }
-
-
-    //     printf("RECORD: %d\n", args->record);
-    //     sem_post(&semaphore);
-    // }
 }
 
 
@@ -118,7 +117,8 @@ void *routine_serveurTCP(void * arg){
         // Unlock the semaphore
         //printf("\nThe score is: %d\n", score);
 
-        args->tab_score[args->index] = score;
+        if (score > args->record)
+            args->record = score;
 
         if (args->index < 2) {
             args->index++;
@@ -126,15 +126,18 @@ void *routine_serveurTCP(void * arg){
             args->index = 0;
         }
 
+        if (args->index >= 0) 
+            args->buffer_score[args->index] = score;
+
         // for (int i = 0 ; i < 3 ; i++) {
-        //     printf("score %d : %d \n", i, args->tab_score[i]);
+        //     printf("score %d : %d \n", i, args->buffer_score[i]);
         // }
         args->updatedBuffer = 1;
         sem_post(&semaphore);
 
     }
     printf("Success\n");
-    pthread_exit((void *)(args->tab_score));
+    pthread_exit((void *)(args->buffer_score));
 }
 
 void *routine_gestionnaire_salle(void *arg) {
@@ -143,12 +146,12 @@ void *routine_gestionnaire_salle(void *arg) {
     sem_init(&semaphore, 0, 1);
     struct thread_datas *args = calloc (sizeof (struct thread_datas), 1);
     
-    args->index = 0;
-    args->record = 0;
+    args->index = -1;
+    args->record = -1;
     args->updatedBuffer = 0;
 
     for (int i= 0 ; i < 3 ; i++) {
-        args->tab_score[i] = 0;
+        args->buffer_score[i] = 0;
     }
 
     printf("Création du thread serveur TCP \n");
