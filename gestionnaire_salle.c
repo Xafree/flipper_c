@@ -20,17 +20,29 @@ struct thread_datas {
 
 void *routine_afficheur(void * arg){
     struct thread_datas *args = (struct thread_datas *) arg;
-    //int tab_score[5] = args->tab_score;
+
+    int affiche_score[5] = {0,0,0,0,0};
+    int index_afficheur = 0;
 
     while(1) {
         sleep(3);
         sem_wait(&semaphore);
         printf("\n");
         for(int i = 0; i < 3 ; i++){
-            printf("SCORE AFFICHEUR %d : %d \n",i, args->tab_score[i]);
-            if (args->tab_score[i] > args->record) {
-                args->record = args->tab_score[i];
+            if(args->tab_score[i] != 0){
+                affiche_score[index_afficheur] = args->tab_score[i];
+                index_afficheur = index_afficheur+1;
             }
+
+            args->tab_score[i] = 0;
+            
+            if(index_afficheur == 5){
+                index_afficheur = 0;
+            }
+        }
+
+        for(int i = 0; i < 5 ; i++){
+            printf("SCORE AFFICHEUR %d : %d \n",i, affiche_score[i]);
         }
         printf("RECORD: %d\n", args->record);
         sem_post(&semaphore);
