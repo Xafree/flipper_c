@@ -12,7 +12,7 @@ sem_t semaphore;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 struct thread_datas {
-  int nb_piece;
+  int credits;
   int tmp_score;
   int *tab_score;
 };
@@ -26,45 +26,35 @@ int get_random (int max){
    return (int) val;
 }
 
-void *routine_partie( void * arg){
-    sem_wait(&semaphore);
-    struct thread_datas *args = (struct thread_datas *) arg;
-
-    int score = get_random(1000000);
-    printf("Score partie : %d\n",score);
-    args->tmp_score =score;
-    sleep(1);
-
-    sem_post(&semaphore);
-    pthread_exit((void *)(args->tmp_score));
-}
-
 void *routine_monnayeur( void * arg){
-    printf("dans le thread monnayeur \n");
+    //sem_wait(&semaphore);
+    printf("\nDans le thread monnayeur \n");
 
     //initialize variable
     struct thread_datas *args = (struct thread_datas *) arg;
-    int nb_piece;
+    int credits;
     int chance = get_random(100);
 
     //jobs
-    printf("Combien de pièces avez vous mis ? \n");
-    scanf("%d", &nb_piece);
+    printf("Combien de pieces avez vous insere ? \n");
+    scanf("%d", &credits);
 
     if(chance < 11){
-        printf("Bravo vous avez gagnez une partie bonus !\n");
-        nb_piece++;
+        printf("\nBravo ! Vous avez gagne une partie gratuite !\n");
+        credits++;
     }
 
-    args->nb_piece = nb_piece;
-
+    args->credits = credits;
+    printf("DANS MONAYEUR CREDITS : %d\n", args->credits);
+    //sem_post(&semaphore);
     //kill Thread
-    pthread_exit((void *)(args->nb_piece));
+    //pthread_exit((void *)(args->credits));
 }
 
 void *routine_client(void * arg){
-    printf("Dans du thread client \n");
-    pthread_mutex_lock(&mutex);
+    printf("\nDans le thread client\n");
+ 
+    sem_wait(&semaphore);
     struct thread_datas *args = (struct thread_datas *) arg;
     int network_socket;
 
@@ -85,15 +75,11 @@ void *routine_client(void * arg){
     }
 
     printf("Connection estabilished\n");
- 
-    // Send data to the socket
-    send(network_socket, args->tab_score, sizeof(args->tab_score), 0);
 
-    //printf("Suspense .....\n");
-    //sleep(2);
- 
+    // Send data to the socket
+    send(network_socket, &args->tab_score, sizeof(args->tab_score), 0);
     close(network_socket);
-    pthread_mutex_unlock(&mutex);
+    sem_post(&semaphore);
     pthread_exit(NULL);
 }
 
@@ -104,28 +90,22 @@ void *routine_flipper(void *arg) {
     struct thread_datas *args = calloc (sizeof (struct thread_datas), 1);
 
     //Thread monnayeur
-    void *nb_piece = NULL;
-    printf("Création du thread monnayeur \n");
-	pthread_create(& t_monnayeur, NULL, &routine_monnayeur,args);
-    pthread_join(t_monnayeur, &nb_piece);
+    void *credits = NULL;
+    printf("\nCréation du thread monnayeur \n");
+	pthread_create(&t_monnayeur, NULL, &routine_monnayeur,args);
+    //pthread_join(t_monnayeur, &credits);
+    pthread_join(t_monnayeur, NULL);
 
-    //TODO playeur
-    pthread_t *t_parties = malloc((int) nb_piece* sizeof(pthread_t));
+    for(int i = 0; i< args->credits ; i++){
 
-    int *tab_score = malloc(sizeof(int));
+        sem_wait(&semaphore);
 
-    void *score = NULL;
-    for(int i = 0; i< (int) nb_piece ; i++){
+        int score = get_random(1000000);
+        printf("Score partie : %d\n",score);
+        args->tab_score = score;
+        sleep(1);
 
-        pthread_mutex_lock(&mutex);
-
-        pthread_create(&t_parties[i], NULL, &routine_partie,args);
-        pthread_join(t_parties[i], &score);
-        tab_score[0] = (int) score;
-        printf ("score de la partie n°%d en cours...\n",i+1);
-        
-        args->tab_score = tab_score;
-        pthread_mutex_unlock(&mutex);
+        sem_post(&semaphore);
 
         //Thread client
         printf("Création du thread client \n");
@@ -146,6 +126,9 @@ int main(void) {
     printf("Création du thread flipper \n");
 
     pthread_create(&flipper, NULL, &routine_flipper, NULL);
+
+
+
     pthread_join(flipper, NULL);
 
     printf("Fin du thread flipper \n");

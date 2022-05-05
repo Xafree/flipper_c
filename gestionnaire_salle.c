@@ -7,12 +7,9 @@
 #include <sys/socket.h>
 
 sem_t semaphore;
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_t writerthreads[100];
-pthread_t readerthreads[100];
 
 struct thread_datas {
-  int buffer_score[3]; // mettre un pointeur quand vrai data 
+  int buffer_score[3];
   int index;
   int record;
   int updatedBuffer;
@@ -26,24 +23,20 @@ void *routine_afficheur(void * arg){
     int index_afficheur = 0;
 
     while(1) {
-        sleep(3);
+
         sem_wait(&semaphore);
         
         if (args->updatedBuffer == 1) {
             printf("\n");
-            printf("BEFORE index_afficheur : %d\n", index_afficheur);
-            printf("BEFORE index : %d\n", args->index);
 
             if (index_afficheur >= size) {
                 index_afficheur = 0;
             }
-            printf("AFTER index_afficheur : %d\n", index_afficheur);
 
             if (args->index >= 0) {
 
                 tab_score_afficheur[index_afficheur] = args->buffer_score[args->index];
                 index_afficheur++;
-
             }
 
                 
@@ -108,8 +101,7 @@ void *routine_serveurTCP(void * arg){
                            (struct sockaddr*)&serverStorage,
                            &addr_size);
         int score = 0;
-        recv(newSocket,
-             &score, sizeof(score), 0);
+        recv(newSocket, &score, sizeof(score), 0);
 
         // // Lock the semaphore
         sem_wait(&semaphore);
