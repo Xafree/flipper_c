@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <time.h>
 
 sem_t semaphore;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -18,7 +19,7 @@ struct thread_datas {
 
 int get_random (int max){
    double val;
- 
+   srand(time(NULL));
    val = (double) max * rand ();
    val = val / (RAND_MAX + 1.0);
  
@@ -44,10 +45,17 @@ void *routine_monnayeur( void * arg){
     //initialize variable
     struct thread_datas *args = (struct thread_datas *) arg;
     int nb_piece;
+    int chance = get_random(100);
 
     //jobs
     printf("Combien de pièces avez vous mis ? \n");
     scanf("%d", &nb_piece);
+
+    if(chance < 11){
+        printf("Bravo vous avez gagnez une partie bonus !\n");
+        nb_piece++;
+    }
+
     args->nb_piece = nb_piece;
 
     //kill Thread

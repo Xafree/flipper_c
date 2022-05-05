@@ -15,26 +15,53 @@ struct thread_datas {
   int tab_score[3]; // mettre un pointeur quand vrai data 
   int index;
   int record;
+  int updatedBuffer;
 };
 
 
 void *routine_afficheur(void * arg){
     struct thread_datas *args = (struct thread_datas *) arg;
-    //int tab_score[5] = args->tab_score;
+    int tab_score_afficheur[5] = {0, 0, 0, 0, 0};
+    int index_afficheur = 0;
 
     while(1) {
         sleep(3);
         sem_wait(&semaphore);
-        printf("\n");
-        for(int i = 0; i < 3 ; i++){
-            printf("SCORE AFFICHEUR %d : %d \n",i, args->tab_score[i]);
-            if (args->tab_score[i] > args->record) {
-                args->record = args->tab_score[i];
+        
+        if (args->updatedBuffer == 1) {
+            printf("\n");
+            for(int i = 0 ; i < 3 ; i++) {
+                tab_score_afficheur[index_afficheur] = args->tab_score[i];
+                printf("index_afficheur : %d\n", index_afficheur);
+                index_afficheur++;
+
+            }
+
+            for (int j = 0 ; j < 5 ; j++) {
+                printf("SCORE AFFICHEUR %d : %d \n", j, tab_score_afficheur[j]);
             }
         }
-        printf("RECORD: %d\n", args->record);
+
+        args->updatedBuffer = 0;
         sem_post(&semaphore);
     }
+
+    // BKP
+    // while(1) {
+    //     sleep(3);
+    //     sem_wait(&semaphore);
+    //     printf("\n");
+    //     for(int i = 0; i < 3 ; i++){
+    //         printf("SCORE AFFICHEUR %d : %d \n",i, args->tab_score[i]);
+    //         if (args->tab_score[i] > args->record) {
+    //             args->record = args->tab_score[i];
+    //         }
+    //     }
+
+
+    //     printf("RECORD: %d\n", args->record);
+    //     sem_post(&semaphore);
+    // }
 }
 
 
@@ -102,7 +129,7 @@ void *routine_serveurTCP(void * arg){
         // for (int i = 0 ; i < 3 ; i++) {
         //     printf("score %d : %d \n", i, args->tab_score[i]);
         // }
-
+        args->updatedBuffer = 1;
         sem_post(&semaphore);
 
     }
@@ -118,6 +145,7 @@ void *routine_gestionnaire_salle(void *arg) {
     
     args->index = 0;
     args->record = 0;
+    args->updatedBuffer = 0;
 
     for (int i= 0 ; i < 3 ; i++) {
         args->tab_score[i] = 0;
