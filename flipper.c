@@ -35,7 +35,6 @@ void* routine_monayeur(void* arg) {
         if (sem_val <= 0 ) {
 
             int pieces_inserees = 0;
-            //int chance = get_random(100);
             printf("\n====================\n");
             printf("\nInserer pieces:\n\n");
             scanf("%d", &pieces_inserees);
@@ -43,10 +42,6 @@ void* routine_monayeur(void* arg) {
             for(int i = 0 ; i < pieces_inserees ; i++) {
                 sem_post(&sem_credits);
             }
-            // if(chance < 11){
-            //     printf("\nBravo! Vous avez gagne une partie gratuite!\n");
-            //     sem_post(&sem_credits);
-            // }
             partie_terminee = 0;
 
         }
@@ -62,7 +57,6 @@ void *routine_clientTCP(void * arg){
 
         if (buffer_updated == 1) {
             sem_wait(&sem_buffer_score);
-            //struct thread_datas *args = (struct thread_datas *) arg;
             int network_socket;
 
             network_socket = socket(AF_INET,SOCK_STREAM, 0);
@@ -79,7 +73,6 @@ void *routine_clientTCP(void * arg){
                 puts("Error\n");
                 return 0;   
             }
-            //printf("Connection estabilished\n");
 
             // Send data to the socket
             printf("\nBUFFER SCORE IN CLIENT TCP : %d\n", buffer_score[0]);
@@ -120,7 +113,6 @@ int main(void) {
         sem_wait(&sem_buffer_score);
         buffer_score[0] = get_random(1000000);
         buffer_updated = 1;
-        //printf("BUFFER SCORE MAIN THREAD : %d\n",buffer_score[0]);
         sem_post(&sem_buffer_score);
 
         if(chance < 11){
