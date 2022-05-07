@@ -22,7 +22,7 @@ int get_random (int max){
    return (int) val;
 }
 
-void* routine_monayeur(void* arg) {
+void* routine_monnayeur(void* arg){
     printf("\nDEBUT DU THREAD MONAYEUR...\n");
 
     while(1) {
@@ -96,7 +96,7 @@ int main(void) {
     buffer_updated = 0;
 
     pthread_create(&t_clientTCP, NULL, &routine_clientTCP, NULL);
-    pthread_create(&t_monnayeur, NULL, &routine_monayeur, NULL);
+    pthread_create(&t_monnayeur, NULL, &routine_monnayeur, NULL);
 
     while(1) {
         int chance = get_random(100);
