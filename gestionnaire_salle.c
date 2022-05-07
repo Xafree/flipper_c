@@ -23,10 +23,9 @@ void *routine_afficheur(void * arg){
     int index_afficheur = 0;
 
     while(1) {
-
-        sem_wait(&semaphore);
         
         if (args->updatedBuffer == 1) {
+            sem_wait(&semaphore);
             printf("\n");
 
             if (index_afficheur >= size) {
@@ -49,9 +48,9 @@ void *routine_afficheur(void * arg){
             } else {
                 printf("AUCUN RECORD\n");
             }
+            args->updatedBuffer = 0;
+            sem_post(&semaphore);
         }
-        args->updatedBuffer = 0;
-        sem_post(&semaphore);
     }
 
 }
