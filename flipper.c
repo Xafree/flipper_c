@@ -13,7 +13,6 @@ sem_t sem_credits;
 sem_t sem_buffer_score;
 int buffer_score[1];
 int buffer_updated;
-int partie_terminee;
 
 int get_random (int max){
    double val;
@@ -42,10 +41,7 @@ void* routine_monayeur(void* arg) {
             for(int i = 0 ; i < pieces_inserees ; i++) {
                 sem_post(&sem_credits);
             }
-            partie_terminee = 0;
-
         }
-
     }
 }
 
@@ -105,7 +101,6 @@ int main(void) {
     while(1) {
         int chance = get_random(100);
         sem_wait(&sem_credits);
-        printf("\nPartie en cours...\n");
 
         sleep(1);
         sem_wait(&sem_buffer_score);
