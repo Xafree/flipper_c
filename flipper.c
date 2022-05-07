@@ -50,7 +50,6 @@ void* routine_monayeur(void* arg) {
 }
 
 void *routine_clientTCP(void * arg){
-    printf("\nDEBUT DU THREAD CLIENT TCP...\n");
  
     while(1) {
         
@@ -75,7 +74,6 @@ void *routine_clientTCP(void * arg){
             }
 
             // Send data to the socket
-            printf("\nBUFFER SCORE IN CLIENT TCP : %d\n", buffer_score[0]);
             send(network_socket, buffer_score, sizeof(buffer_score), 0);
             close(network_socket);
             buffer_updated = 0;
